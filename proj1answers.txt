@@ -1,0 +1,12 @@
+In general, we did this project in the order in which the components were
+introduced in the spec. This led to a few confusions, such as not realizing all
+the methods of not-yet-implemented methods. In particular, pid.getTableId() was
+a pain point. Another hurdle was using unfamiliar Java classes, such as
+RandomAccessFile. A quick read through of it's spec wasn't comprehensive enough,
+and instead of using scan then read, we tried to pass in the offset as an
+argument to read. The offset actually referred to the target byte[], not the
+one being read from, as we had expected. Overall though, it went smoothly. The
+cycle was to implement the next excercise, then debug it until it passed the
+test. The hardest part was wrapping our heads around the whole simpledb
+architecture, from the db to the catalog of tables, to the heapfiles of
+heappages. Overall though, the layout is clear and well documented.
