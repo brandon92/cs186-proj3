@@ -4,6 +4,12 @@ package simpledb;
  */
 public class IntHistogram {
 
+    private int[] buckets;
+    private int width;
+    private int nTups;
+    private int min;
+    private int max;
+
     /**
      * Create a new IntHistogram.
      * 
@@ -22,6 +28,10 @@ public class IntHistogram {
      */
     public IntHistogram(int buckets, int min, int max) {
     	// some code goes here
+	this.buckets = new int[buckets];
+	this.width = (int) Math.ceil((max - min + 1)/ (float) buckets);
+	this.min = min;
+	this.max = max;
     }
 
     /**
@@ -30,7 +40,61 @@ public class IntHistogram {
      */
     public void addValue(int v) {
     	// some code goes here
+	buckets[bucketOf(v)] += 1;
+	nTups += 1;
     }
+
+    /** Helper method that determines what bucket an integer value belongs to. */
+    private int bucketOf(int v) {
+	int b = (v - min) / width; // Integer should floor divide
+	return b;
+    }
+
+    /** Helper method that determines a buckets selectivity contribution */
+    private double bucketSelect(int bucketIndex) {
+	return buckets[bucketIndex] / (double) (nTups);
+    }
+
+    /** Helper method that determines the fractional contribution of the
+	bucket that contains a portion greater than a constant. */
+    private double bucketGreat(int c) {
+	int bucketIndex = bucketOf(c);
+	int bRight = (width * (bucketIndex + 1)) - 1 + min;
+	return (bRight - c) / (double) (width);
+    }
+
+    /** Helper that determines the fractional contribution of the
+	bucket that contains a portion less than a constant */
+    private double bucketLess(int c) {
+	int bucketIndex = bucketOf(c);
+	int bLeft = (width * bucketIndex) + min;
+	return (c - bLeft) / (double) (width);
+    }
+
+    /** Returns the selectivity of an equality expression f=const*/
+    private double bEquals(int c) { 
+	return bucketSelect(bucketOf(c)) / width;
+    }
+
+    /** Returns the selectivity of a less than expression. */
+    private double bLess(int c) {
+	double result = bucketLess(c);
+	for (int i = bucketOf(c); i >= 0; i--) {
+	    result += bucketSelect(i);
+	}
+	return result;
+    }
+
+    /** Returns the selectivity of a greater than expression. */
+    private double bGreat(int c) {
+	double result = bucketGreat(c);
+	for (int i = bucketOf(c); i < buckets.length; i++) {
+	    result += bucketSelect(i);
+	}
+	return result;
+    }
+
+    /** Returns the selectivity of a bucket. */
 
     /**
      * Estimate the selectivity of a particular predicate and operand on this table.
@@ -45,7 +109,36 @@ public class IntHistogram {
     public double estimateSelectivity(Predicate.Op op, int v) {
 
     	// some code goes here
-        return -1.0;
+	double result = 0;
+
+	int currBucket = bucketOf(v);
+	switch(op) {
+	case LIKE:
+	case EQUALS:
+	    if (v < min || v > max) return 0;
+	    return bEquals(v);
+	case GREATER_THAN:
+	    if (v >= max) return 0;
+	    else if (v < min) return 1;
+	    return bGreat(v);
+	case LESS_THAN:
+	    if (v > max) return 1;
+	    else if (v <= min) return 0;
+	    return bLess(v);
+	case LESS_THAN_OR_EQ:
+	    if (v > max) return 1;
+	    else if (v < min) return 0;
+	    return bLess(v) + bucketSelect(bucketOf(v));
+	case GREATER_THAN_OR_EQ:
+	    if (v > max) return 0;
+	    else if (v < min) return 1;
+	    return bGreat(v) + bucketSelect(bucketOf(v));
+	case NOT_EQUALS:
+	    if (v > max || v < min) return 1;
+	    return 1 - bucketSelect(bucketOf(v));
+	default:
+	    throw new IllegalStateException("impossible to reach here");	 
+	}
     }
     
     /**
