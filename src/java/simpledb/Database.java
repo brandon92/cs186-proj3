@@ -11,7 +11,7 @@ import java.io.*;
 */
 
 public class Database {
-	private static Database _instance = new Database();
+    private static Database _instance = new Database();
     private final Catalog _catalog;
     private BufferPool _bufferpool; 
 

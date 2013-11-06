@@ -10,6 +10,7 @@ public class IntHistogram {
     private int min;
     private int max;
 
+
     /**
      * Create a new IntHistogram.
      * 
@@ -52,6 +53,7 @@ public class IntHistogram {
 
     /** Helper method that determines a buckets selectivity contribution */
     private double bucketSelect(int bucketIndex) {
+	if (bucketIndex < 0 || bucketIndex >= buckets.length) return 0;
 	return buckets[bucketIndex] / (double) (nTups);
     }
 
@@ -79,7 +81,7 @@ public class IntHistogram {
     /** Returns the selectivity of a less than expression. */
     private double bLess(int c) {
 	double result = bucketLess(c);
-	for (int i = bucketOf(c); i >= 0; i--) {
+	for (int i = bucketOf(c) - 1; i >= 0; i--) {
 	    result += bucketSelect(i);
 	}
 	return result;
@@ -88,7 +90,7 @@ public class IntHistogram {
     /** Returns the selectivity of a greater than expression. */
     private double bGreat(int c) {
 	double result = bucketGreat(c);
-	for (int i = bucketOf(c); i < buckets.length; i++) {
+	for (int i = bucketOf(c) + 1; i < buckets.length; i++) {
 	    result += bucketSelect(i);
 	}
 	return result;
@@ -128,11 +130,11 @@ public class IntHistogram {
 	case LESS_THAN_OR_EQ:
 	    if (v > max) return 1;
 	    else if (v < min) return 0;
-	    return bLess(v) + bucketSelect(bucketOf(v));
+	    return bLess(v) + bEquals(v);
 	case GREATER_THAN_OR_EQ:
 	    if (v > max) return 0;
 	    else if (v < min) return 1;
-	    return bGreat(v) + bucketSelect(bucketOf(v));
+	    return bGreat(v) + bEquals(v);
 	case NOT_EQUALS:
 	    if (v > max || v < min) return 1;
 	    return 1 - bucketSelect(bucketOf(v));
