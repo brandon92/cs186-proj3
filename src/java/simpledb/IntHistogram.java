@@ -30,7 +30,7 @@ public class IntHistogram {
     public IntHistogram(int buckets, int min, int max) {
     	// some code goes here
 	this.buckets = new int[buckets];
-	this.width = (int) Math.ceil((max - min + 1)/ (float) buckets);
+	this.width = (int) Math.ceil((max - min + 1)/ (double) buckets);
 	this.min = min;
 	this.max = max;
     }
