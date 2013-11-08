@@ -13,6 +13,7 @@ import javax.swing.tree.*;
 public class JoinOptimizer {
     LogicalPlan p;
     Vector<LogicalJoinNode> joins;
+    final static double HEURISTIC = 0.3;
 
     /**
      * Constructor
@@ -154,11 +155,8 @@ public class JoinOptimizer {
             String field2PureName, int card1, int card2, boolean t1pkey,
             boolean t2pkey, Map<String, TableStats> stats,
             Map<String, Integer> tableAliasToId) {
-        //int card = 1;
         // some code goes here
-        //return card <= 0 ? 1 : card;
-	if (joinOp == Predicate.Op.EQUALS ||
-	    joinOp == Predicate.Op.NOT_EQUALS) {
+	if (joinOp == Predicate.Op.EQUALS || joinOp == Predicate.Op.NOT_EQUALS) {
 	    if (t1pkey) {
 		return card2;
 	    } else if (t2pkey) {
@@ -167,7 +165,7 @@ public class JoinOptimizer {
 		return Math.max(card1, card2);
 	    }
 	} else {
-	    return (int) .3 * (card1 * card2);
+	    return (int) (HEURISTIC * card1 * card2);
 	}
     }
 
@@ -234,7 +232,39 @@ public class JoinOptimizer {
 
         // some code goes here
         //Replace the following
-        return joins;
+        //return joins;
+	PlanCache pc = new PlanCache();
+	for (int i = 1; i <= joins.size(); i++) {
+	    Set<Set<LogicalJoinNode>> subset_i = enumerateSubsets(joins, i);
+	    for(Set<LogicalJoinNode> s: subset_i) {
+		CostCard c = new CostCard();
+		c.cost = Double.MAX_VALUE; // bestPlan = {}
+		c.card = Integer.MAX_VALUE;
+		c.plan = new Vector<LogicalJoinNode> ();
+		for (LogicalJoinNode joinToRemove : s) {
+		    CostCard c_new = computeCostAndCardOfSubplan(stats,
+						    filterSelectivities,
+						    joinToRemove,
+						    s,
+						    c.cost,
+						    pc);
+		    if (c_new != null) {  // if cost(plan) < cost(bestPlan)
+			if (c.cost > c_new.cost) {
+			    c = c_new;        // bestPlan = plan
+			}
+		    }
+		}
+		pc.addPlan(s, c.cost, c.card, c.plan); //optjoin(s) = bestPlan
+	    }
+	}
+
+	Vector<LogicalJoinNode> js = pc.getOrder(new HashSet<LogicalJoinNode>(joins));
+
+	if (explain) {
+	    printJoins(js, pc, stats, filterSelectivities);
+	}
+
+	return js;
     }
 
     // ===================== Private Methods =================================
@@ -378,7 +408,7 @@ public class JoinOptimizer {
         }
         if (cost1 >= bestCostSoFar)
             return null;
-
+	
         CostCard cc = new CostCard();
 
         cc.card = estimateJoinCardinality(j, t1card, t2card, leftPkey,

@@ -23,7 +23,7 @@ public class Join extends Operator {
      * Constructor. Accepts to children to join and the predicate to join them
      * on
      * 
-     * @param p
+     * @param pj
      *            The predicate to use to join the children
      * @param child1
      *            Iterator for the left(outer) relation to join
@@ -48,7 +48,7 @@ public class Join extends Operator {
      * */
     public String getJoinField1Name() {
         // some code goes here
-        return null;
+        return children[0].getTupleDesc().getFieldName((p.getField1()));
     }
 
     /**
@@ -58,7 +58,7 @@ public class Join extends Operator {
      * */
     public String getJoinField2Name() {
         // some code goes here
-        return null;
+        return children[1].getTupleDesc().getFieldName((p.getField2()));
     }
 
     /**
