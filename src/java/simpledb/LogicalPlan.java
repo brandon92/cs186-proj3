@@ -406,6 +406,10 @@ public class LogicalPlan {
             throw new ParsingException("Query does not include join expressions joining all nodes!");
         }
         
+	if (subplanMap.size() == 0) {
+	    throw new ParsingException("God damnit.");
+	}
+
         DbIterator node =  (DbIterator)(subplanMap.entrySet().iterator().next().getValue());
 
         //walk the select list, to determine order in which to project output fields

@@ -233,6 +233,10 @@ public class JoinOptimizer {
         // some code goes here
         //Replace the following
         //return joins;
+	if (joins == null || joins.size() == 0) {
+	    return new Vector<LogicalJoinNode>();
+	}
+
 	PlanCache pc = new PlanCache();
 	for (int i = 1; i <= joins.size(); i++) {
 	    Set<Set<LogicalJoinNode>> subset_i = enumerateSubsets(joins, i);
